@@ -1,34 +1,44 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import readline from 'readline';
 import mongoose from 'mongoose';
 
-// Load .env from root without requiring external dotenv package
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const envPath = path.resolve(__dirname, '../.env');
-
-if (fs.existsSync(envPath)) {
-  const content = fs.readFileSync(envPath, 'utf-8');
-  for (const line of content.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx !== -1) {
-      const key = trimmed.slice(0, eqIdx).trim();
-      let val = trimmed.slice(eqIdx + 1).trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-        val = val.slice(1, -1);
+// Load .env safely from root or current directory without external dependencies
+function loadEnv(): void {
+  const possiblePaths = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), '../.env'),
+    path.resolve(process.cwd(), 'backend/.env'),
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      const content = fs.readFileSync(p, 'utf-8');
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx !== -1) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (process.env[key] === undefined) {
+            process.env[key] = val;
+          }
+        }
       }
-      if (process.env[key] === undefined) {
-        process.env[key] = val;
-      }
+      break;
     }
   }
 }
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/teledrive';
+loadEnv();
+
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  process.env.MONGODB_URI ||
+  'mongodb://localhost:27017/teledrive';
 
 // Inline schema definition to allow standalone execution without compiling backend
 const AllowedDiscordUserSchema = new mongoose.Schema(
@@ -49,7 +59,15 @@ const AllowedDiscordUserSchema = new mongoose.Schema(
   { collection: 'allowed_discord_users', timestamps: true }
 );
 
-const AllowedDiscordUser =
+interface IAllowedDiscordUserDoc {
+  username: string;
+  discordId?: string;
+  addedBy: string;
+  addedAt: Date;
+  notes?: string;
+}
+
+const AllowedDiscordUser: any =
   mongoose.models.AllowedDiscordUser ||
   mongoose.model('AllowedDiscordUser', AllowedDiscordUserSchema);
 
@@ -58,17 +76,17 @@ function getEnvAllowed(): string[] {
   if (!raw.trim()) return [];
   return raw
     .split(',')
-    .map(s => s.trim().toLowerCase().replace(/^@/, ''))
+    .map((s: string) => s.trim().toLowerCase().replace(/^@/, ''))
     .filter(Boolean);
 }
 
 function promptQuestion(rl: readline.Interface, query: string): Promise<string> {
   return new Promise((resolve) => {
-    rl.question(query, (answer) => resolve(answer.trim()));
+    rl.question(query, (answer: string) => resolve(answer.trim()));
   });
 }
 
-async function connectDB() {
+async function connectDB(): Promise<void> {
   try {
     await mongoose.connect(MONGO_URI, {
       serverSelectionTimeoutMS: 5000,
@@ -88,7 +106,7 @@ async function listUsers(): Promise<{ dbUsers: any[]; envUsers: string[] }> {
 
   if (envUsers.length > 0) {
     console.log(`\x1b[33mFrom Environment Variable (ALLOWED_DISCORD_USERNAMES):\x1b[0m`);
-    envUsers.forEach((u, i) => {
+    envUsers.forEach((u: string, i: number) => {
       console.log(`  [E${i + 1}] \x1b[32m@${u}\x1b[0m (source: .env)`);
     });
     console.log('');
@@ -104,7 +122,7 @@ async function listUsers(): Promise<{ dbUsers: any[]; envUsers: string[] }> {
         'Notes'
     );
     console.log('  ' + '-'.repeat(74));
-    dbUsers.forEach((u, idx) => {
+    dbUsers.forEach((u: any, idx: number) => {
       const numStr = `[${idx + 1}]`.padEnd(6);
       const dateStr = u.addedAt
         ? new Date(u.addedAt).toISOString().split('T')[0]
@@ -125,7 +143,7 @@ async function listUsers(): Promise<{ dbUsers: any[]; envUsers: string[] }> {
   return { dbUsers, envUsers };
 }
 
-async function addUser(rawUsername: string, notes?: string) {
+async function addUser(rawUsername: string, notes?: string): Promise<void> {
   const target = (rawUsername || '').trim().toLowerCase().replace(/^@/, '');
   if (!target) {
     console.log(`\x1b[31m[Error] Username cannot be empty.\x1b[0m`);
@@ -148,7 +166,7 @@ async function addUser(rawUsername: string, notes?: string) {
   }
 }
 
-async function removeUser(target: string) {
+async function removeUser(target: string): Promise<void> {
   const username = (target || '').trim().toLowerCase().replace(/^@/, '');
   if (!username) {
     console.log(`\x1b[31m[Error] Please specify a username or number to remove.\x1b[0m`);
@@ -171,7 +189,7 @@ async function removeUser(target: string) {
   }
 }
 
-async function interactiveMenu() {
+async function interactiveMenu(): Promise<void> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -263,7 +281,7 @@ async function interactiveMenu() {
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = (args[0] || '').toLowerCase();
   const targetUsername = (args[1] || '').trim().toLowerCase().replace(/^@/, '');

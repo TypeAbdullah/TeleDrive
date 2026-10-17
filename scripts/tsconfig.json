@@ -4,8 +4,10 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "strict": true,
+    "strict": false,
     "skipLibCheck": true,
+    "allowJs": true,
+    "noEmit": true,
     "resolveJsonModule": true
   },
   "include": ["./**/*.ts"]

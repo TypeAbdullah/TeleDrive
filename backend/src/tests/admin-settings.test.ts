@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import express from 'express';
-import request from 'supertest';
 import { SettingsService, SETTING_DEFINITIONS } from '../services/settings.service.js';
 import { maintenanceGuard } from '../middleware/maintenance-guard.js';
 
@@ -35,9 +34,6 @@ describe('Central Settings Management System', () => {
   });
 
   it('enforces maintenance mode guard for non-exempt endpoints', async () => {
-    const app = express();
-    app.use(express.json());
-
     // Mock maintenance mode active
     const mockMaintenanceGuard = async (req: any, res: any, next: any) => {
       if (req.path === '/health' || req.path.startsWith('/api/auth')) {
@@ -54,10 +50,6 @@ describe('Central Settings Management System', () => {
         },
       });
     };
-
-    app.use(mockMaintenanceGuard);
-    app.get('/health', (_req, res) => res.json({ status: 'ok' }));
-    app.get('/api/v1/files', (_req, res) => res.json({ files: [] }));
 
     // Non-admin call to /api/v1/files should be rejected with 503
     const resBlocked: any = await new Promise(resolve => {

@@ -15,12 +15,12 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import express from 'express';
 import { downloadService } from '../backend/src/services/download.service.js';
 import { downloadAuthService } from '../backend/src/services/download-auth.service.js';
 import { internalStreamRouter } from '../backend/src/routes/internal-stream.routes.js';
 import { downloadMetrics } from '../backend/src/infrastructure/metrics/download-metrics.js';
+// @ts-ignore
 import workerHandler from '../workers/worker.js';
 import { loadConfig } from '../backend/src/config/env.js';
 

@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "description": "Advanced Telegram-powered cloud storage platform",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
     "dev": "concurrently -n backend,frontend -c blue,green \"pnpm dev:backend\" \"pnpm dev:frontend\"",
     "dev:backend": "pnpm --filter backend dev",
