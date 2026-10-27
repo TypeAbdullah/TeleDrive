@@ -1,6 +1,6 @@
 <template>
-  <div class="three-hero-container" ref="containerRef">
-    <canvas ref="canvasRef" class="three-canvas"></canvas>
+  <div class="three-hero-wrapper" ref="containerRef">
+    <canvas ref="canvasRef" class="three-hero-canvas"></canvas>
   </div>
 </template>
 
@@ -19,6 +19,7 @@ let innerOrbMesh: any = null;
 let ring1: any = null;
 let ring2: any = null;
 let particles: any = null;
+let resizeObserver: any = null;
 
 let mouseX = 0;
 let mouseY = 0;
@@ -30,8 +31,8 @@ const handleMouseMove = (event: MouseEvent) => {
   const rect = containerRef.value.getBoundingClientRect();
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
-  mouseX = (event.clientX - centerX) * 0.0025;
-  mouseY = (event.clientY - centerY) * 0.0025;
+  mouseX = (event.clientX - centerX) * 0.002;
+  mouseY = (event.clientY - centerY) * 0.002;
 };
 
 onMounted(async () => {
@@ -39,8 +40,8 @@ onMounted(async () => {
 
   const THREE = await import('three');
 
-  const width = containerRef.value.clientWidth || 380;
-  const height = containerRef.value.clientHeight || 380;
+  const width = containerRef.value.clientWidth || 320;
+  const height = containerRef.value.clientHeight || 320;
 
   scene = new THREE.Scene();
 
@@ -53,33 +54,32 @@ onMounted(async () => {
     alpha: true,
     powerPreference: 'high-performance'
   });
-  renderer.setSize(width, height);
+  renderer.setSize(width, height, false);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  // 1. Central Wireframe Polyhedron (TeleDrive Storage Core)
+  // Central wireframe icosahedron
   const icoGeo = new THREE.IcosahedronGeometry(1.85, 2);
   const wireGeo = new THREE.WireframeGeometry(icoGeo);
   const wireMat = new THREE.LineBasicMaterial({
     color: 0xffffff,
     transparent: true,
-    opacity: 0.35,
-    linewidth: 1
+    opacity: 0.35
   });
   orbMesh = new THREE.LineSegments(wireGeo, wireMat);
   scene.add(orbMesh);
 
-  // 2. Inner Core with Solid/Transparent Faces
+  // Inner geometric core
   const innerGeo = new THREE.IcosahedronGeometry(1.15, 1);
   const innerMat = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     wireframe: true,
     transparent: true,
-    opacity: 0.15
+    opacity: 0.12
   });
   innerOrbMesh = new THREE.Mesh(innerGeo, innerMat);
   scene.add(innerOrbMesh);
 
-  // 3. Orbiting Geometric Rings (Data Pipelines)
+  // Orbiting rings
   const ringGeo1 = new THREE.RingGeometry(2.35, 2.38, 64);
   const ringMat1 = new THREE.MeshBasicMaterial({
     color: 0xffffff,
@@ -96,15 +96,15 @@ onMounted(async () => {
     color: 0x888888,
     side: THREE.DoubleSide,
     transparent: true,
-    opacity: 0.18
+    opacity: 0.16
   });
   ring2 = new THREE.Mesh(ringGeo2, ringMat2);
   ring2.rotation.x = -Math.PI / 4;
   ring2.rotation.y = Math.PI / 5;
   scene.add(ring2);
 
-  // 4. Ambient Data Chunks (Particle Constellation)
-  const particleCount = 200;
+  // Particle cloud
+  const particleCount = 180;
   const positions = new Float32Array(particleCount * 3);
 
   for (let i = 0; i < particleCount; i++) {
@@ -121,7 +121,6 @@ onMounted(async () => {
   const particleGeometry = new THREE.BufferGeometry();
   particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-  // Circular particle point
   const pCanvas = document.createElement('canvas');
   pCanvas.width = 16;
   pCanvas.height = 16;
@@ -149,18 +148,21 @@ onMounted(async () => {
   particles = new THREE.Points(particleGeometry, particleMaterial);
   scene.add(particles);
 
-  const handleResize = () => {
-    if (!containerRef.value || !renderer || !camera) return;
-    const newWidth = containerRef.value.clientWidth;
-    const newHeight = containerRef.value.clientHeight;
-    if (newWidth && newHeight) {
-      camera.aspect = newWidth / newHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(newWidth, newHeight);
-    }
-  };
+  // ResizeObserver for container
+  if (typeof ResizeObserver !== 'undefined' && containerRef.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width: w, height: h } = entry.contentRect;
+        if (w > 0 && h > 0 && camera && renderer) {
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h, false);
+        }
+      }
+    });
+    resizeObserver.observe(containerRef.value);
+  }
 
-  window.addEventListener('resize', handleResize);
   window.addEventListener('mousemove', handleMouseMove);
 
   let clock = new THREE.Clock();
@@ -169,32 +171,32 @@ onMounted(async () => {
     animationFrameId = requestAnimationFrame(animate);
     const elapsedTime = clock.getElapsedTime();
 
-    targetX += (mouseX - targetX) * 0.06;
-    targetY += (mouseY - targetY) * 0.06;
+    targetX += (mouseX - targetX) * 0.05;
+    targetY += (mouseY - targetY) * 0.05;
 
     if (orbMesh) {
-      orbMesh.rotation.y = elapsedTime * 0.18 + targetX * 1.8;
-      orbMesh.rotation.x = elapsedTime * 0.1 + targetY * 1.8;
+      orbMesh.rotation.y = elapsedTime * 0.16 + targetX * 1.5;
+      orbMesh.rotation.x = elapsedTime * 0.08 + targetY * 1.5;
     }
 
     if (innerOrbMesh) {
-      innerOrbMesh.rotation.y = -elapsedTime * 0.25 + targetX;
-      innerOrbMesh.rotation.z = elapsedTime * 0.12;
+      innerOrbMesh.rotation.y = -elapsedTime * 0.22 + targetX;
+      innerOrbMesh.rotation.z = elapsedTime * 0.1;
     }
 
     if (ring1) {
-      ring1.rotation.z = elapsedTime * 0.15;
-      ring1.rotation.y = Math.sin(elapsedTime * 0.4) * 0.25;
+      ring1.rotation.z = elapsedTime * 0.12;
+      ring1.rotation.y = Math.sin(elapsedTime * 0.3) * 0.2;
     }
 
     if (ring2) {
-      ring2.rotation.z = -elapsedTime * 0.1;
-      ring2.rotation.x = -Math.PI / 4 + Math.cos(elapsedTime * 0.3) * 0.2;
+      ring2.rotation.z = -elapsedTime * 0.08;
+      ring2.rotation.x = -Math.PI / 4 + Math.cos(elapsedTime * 0.2) * 0.15;
     }
 
     if (particles) {
-      particles.rotation.y = elapsedTime * 0.05 + targetX * 0.5;
-      particles.rotation.x = targetY * 0.5;
+      particles.rotation.y = elapsedTime * 0.04 + targetX * 0.4;
+      particles.rotation.x = targetY * 0.4;
     }
 
     renderer.render(scene, camera);
@@ -207,6 +209,9 @@ onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('mousemove', handleMouseMove);
   }
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
   }
@@ -217,11 +222,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.three-hero-container {
+.three-hero-wrapper {
   width: 100%;
   height: 100%;
-  min-height: 340px;
-  max-width: 420px;
+  min-height: 260px;
+  max-width: 380px;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
   position: relative;
@@ -230,10 +235,9 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
-.three-canvas {
-  width: 100% !important;
-  height: 100% !important;
+.three-hero-canvas {
+  width: 100%;
+  height: 100%;
   display: block;
-  filter: drop-shadow(0 0 35px rgba(255, 255, 255, 0.15));
 }
 </style>

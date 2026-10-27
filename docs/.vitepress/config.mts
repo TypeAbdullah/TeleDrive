@@ -1,20 +1,24 @@
 import { defineConfig } from 'vitepress';
 
+// When deploying to GitHub Pages via GitHub Actions, base path is /TeleDrive/
+const base = process.env.GITHUB_ACTIONS ? '/TeleDrive/' : '/';
+
 export default defineConfig({
   title: 'TeleDrive',
   description: 'Enterprise-grade Telegram-backed cloud storage with Cloudflare Edge distributed streaming.',
+  base,
   lang: 'en-US',
   cleanUrls: true,
   lastUpdated: true,
   ignoreDeadLinks: true,
-  appearance: 'dark', // Pure Black & White monochrome aesthetic
+  appearance: 'dark',
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
     ['link', { href: 'https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap', rel: 'stylesheet' }],
-    ['meta', { name: 'theme-color', content: '#000000' }]
+    ['meta', { name: 'theme-color', content: '#09090b' }]
   ],
 
   themeConfig: {
@@ -29,7 +33,6 @@ export default defineConfig({
       { text: 'Deployment', link: '/guide/deployment' }
     ],
 
-    // Scope sidebar exclusively to /guide/ so Home Page has NO sidebar
     sidebar: {
       '/guide/': [
         {
@@ -79,8 +82,8 @@ export default defineConfig({
     },
 
     footer: {
-      message: 'Released under the MIT License • Monochromatic Edition',
-      copyright: 'Copyright © 2026 TeleDrive'
+      message: 'Released under the MIT License',
+      copyright: `Copyright © ${new Date().getFullYear()} <a href="https://github.com/TypeAbdullah" target="_blank" rel="noreferrer">TypeAbdullah</a>`
     }
   },
 

@@ -91,12 +91,18 @@ export class MtcuteClientAdapter implements ITelegramClientAdapter {
       }
 
       // Send document to the target channel or 'me'
-      const msg = await this.client.sendMedia(this.peerId, {
-        type: 'document',
-        file: fileToUpload,
-        fileName: options.fileName,
-        mimeType: options.mimeType,
-      });
+      const clientAny = this.client as any;
+      const msg = typeof clientAny.sendDocument === 'function'
+        ? await clientAny.sendDocument(this.peerId, fileToUpload, {
+            fileName: options.fileName,
+            mimeType: options.mimeType,
+          })
+        : await clientAny.sendMedia(this.peerId, {
+            type: 'document',
+            file: fileToUpload,
+            fileName: options.fileName,
+            mimeType: options.mimeType,
+          });
 
       const rawFileId = (msg.media as any)?.document?.fileId || `msg_${msg.id}`;
       return {
@@ -124,7 +130,9 @@ export class MtcuteClientAdapter implements ITelegramClientAdapter {
           downloadParams.limit = range.end - range.start + 1;
         }
       }
-      const stream = await this.client.downloadAsStream(fileId as any, downloadParams);
+      const clientAny = this.client as any;
+      const downloadFn = clientAny.downloadAsNodeStream || clientAny.downloadAsStream;
+      const stream = await downloadFn.call(clientAny, fileId as any, downloadParams);
       return stream as unknown as NodeJS.ReadableStream;
     } catch (err) {
       log.error({ err, accountId: this.accountId, messageId }, 'Failed to download stream from Telegram');
@@ -135,7 +143,12 @@ export class MtcuteClientAdapter implements ITelegramClientAdapter {
   async deleteMessage(messageId: number): Promise<void> {
     if (!this.client || !this.isReady) return;
     try {
-      await this.client.deleteMessagesById(this.peerId, [messageId]);
+      const clientAny = this.client as any;
+      if (typeof clientAny.deleteMessages === 'function') {
+        await clientAny.deleteMessages(this.peerId, [messageId]);
+      } else if (typeof clientAny.deleteMessagesById === 'function') {
+        await clientAny.deleteMessagesById(this.peerId, [messageId]);
+      }
     } catch (err) {
       log.warn({ err, accountId: this.accountId, messageId }, 'Failed to delete message on Telegram');
     }
