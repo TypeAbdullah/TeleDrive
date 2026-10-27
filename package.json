@@ -20,7 +20,10 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "clean": "rimraf backend/dist frontend/dist",
-    "discord": "npx tsx scripts/manage-discord-users.ts"
+    "discord": "npx tsx scripts/manage-discord-users.ts",
+    "docs:dev": "npm --prefix docs run dev",
+    "docs:build": "npm --prefix docs run build",
+    "docs:preview": "npm --prefix docs run preview"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

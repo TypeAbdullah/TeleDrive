@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="monoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#888888"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="#09090b" stroke="#27272a" stroke-width="2"/>
+  <!-- Outer geometric storage node -->
+  <circle cx="50" cy="50" r="32" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.4"/>
+  <!-- Center drive nodes -->
+  <path d="M30 65 L70 65" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="62" cy="65" r="2" fill="#ffffff"/>
+  <!-- Telegram plane styled in sharp monochrome -->
+  <path d="M26 48 L74 30 L58 70 L46 54 L38 58 Z" fill="url(#monoGrad)" filter="url(#glow)"/>
+  <path d="M46 54 L66 38 L38 50 Z" fill="#18181b" opacity="0.6"/>
+</svg>
